@@ -1,57 +1,76 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\BookingController;
-use App\Http\Controllers\RoomController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\ChatController as UserChatController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\Frontend\RoomController as FrontendRoomController;
+use App\Http\Controllers\Frontend\BookingController as FrontendBookingController;
+use App\Http\Controllers\Frontend\PaymentController as FrontendPaymentController;
+use App\Http\Controllers\Frontend\ReviewController as FrontendReviewController;
+use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
-
-// Public routes
+// Главная страница
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/hotel', [HomeController::class, 'hotel'])->name('hotel');
-Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
-Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('rooms.show');
-Route::get('/rooms/availability', [RoomController::class, 'checkAvailability'])->name('rooms.availability');
-Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
-Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
 
-// Authentication routes (будет добавлено Breeze)
-Route::middleware('auth')->group(function () {
-    // Profile
+// Страницы отеля
+Route::get('/about', [HomeController::class, 'about'])->name('about');
+Route::get('/contact', [ContactController::class, 'index'])->name('contact');
+Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
+
+// Поиск номеров
+Route::get('/search', [SearchController::class, 'index'])->name('search');
+Route::post('/search/availability', [SearchController::class, 'checkAvailability'])->name('search.availability');
+
+// Номера (публичный просмотр)
+Route::get('/rooms', [FrontendRoomController::class, 'index'])->name('rooms.index');
+Route::get('/rooms/{room}', [FrontendRoomController::class, 'show'])->name('rooms.show');
+
+// Отзывы (публичные)
+Route::get('/reviews', [FrontendReviewController::class, 'index'])->name('reviews.index');
+Route::get('/hotel/reviews', [FrontendReviewController::class, 'hotelReviews'])->name('reviews.hotel');
+
+// Аутентифицированные маршруты
+Route::middleware(['auth'])->group(function () {
+    // Личный кабинет
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Bookings
-    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
-    Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
-    Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
-    Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
-    Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+    // Бронирования пользователя
+    Route::prefix('my')->name('my.')->group(function () {
+        Route::get('/bookings', [FrontendBookingController::class, 'index'])->name('bookings.index');
+        Route::get('/bookings/{booking}', [FrontendBookingController::class, 'show'])->name('bookings.show');
+        Route::post('/bookings/{booking}/cancel', [FrontendBookingController::class, 'cancel'])->name('bookings.cancel');
+        Route::post('/bookings/{booking}/extend', [FrontendBookingController::class, 'extend'])->name('bookings.extend');
+    });
 
-    // Reviews
-    Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+    // Бронирование (процесс)
+    Route::post('/rooms/{room}/book', [FrontendBookingController::class, 'store'])->name('bookings.store');
+    Route::get('/booking/{booking}/confirm', [FrontendBookingController::class, 'confirm'])->name('bookings.confirm');
 
-    // Chat
-    Route::get('/chat', [UserChatController::class, 'index'])->name('chat.index');
-    Route::post('/chat/message', [UserChatController::class, 'sendMessage'])->name('chat.send');
+    // Оплата
+    Route::prefix('payment')->name('payment.')->group(function () {
+        Route::get('/{booking}', [FrontendPaymentController::class, 'create'])->name('create');
+        Route::post('/{booking}/process', [FrontendPaymentController::class, 'process'])->name('process');
+        Route::get('/{booking}/success', [FrontendPaymentController::class, 'success'])->name('success');
+        Route::get('/{booking}/cancel', [FrontendPaymentController::class, 'cancel'])->name('cancel');
+    });
+
+    // Отзывы пользователя
+    Route::post('/reviews', [FrontendReviewController::class, 'store'])->name('reviews.store');
+    Route::put('/reviews/{review}', [FrontendReviewController::class, 'update'])->name('reviews.update');
+    Route::delete('/reviews/{review}', [FrontendReviewController::class, 'destroy'])->name('reviews.destroy');
+
+    // Чат с поддержкой (будет в API)
 });
 
-// Include admin routes
-require __DIR__.'/admin.php';
+// Статические страницы (из админки)
+Route::get('/page/{slug}', [App\Http\Controllers\Frontend\PageController::class, 'show'])->name('page.show');
+Route::get('/faq', [App\Http\Controllers\Frontend\FAQController::class, 'index'])->name('faq.index');
 
-// Include auth routes (будет сгенерировано Breeze)
+// Sitemap
+Route::get('/sitemap.xml', [App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
+
+// Подключение маршрутов аутентификации
 require __DIR__.'/auth.php';
