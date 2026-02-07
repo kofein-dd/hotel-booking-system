@@ -1,0 +1,13 @@
+// Variables
+$primary: #3498db;
+$secondary: #2c3e50;
+$success: #27ae60;
+$danger: #e74c3c;
+$warning: #f39c12;
+$info: #17a2b8;
+
+// Import Bootstrap
+@import 'bootstrap/scss/bootstrap';
+
+// FontAwesome
+@import '@fortawesome/fontawesome-free/css/all.css';
