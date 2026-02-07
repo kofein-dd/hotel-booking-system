@@ -24,6 +24,12 @@ class ChatMessage extends Model
         'delivered_at',
         'deleted_by',
         'metadata',
+        'chat_session_id',
+        'user_id',
+        'admin_id',
+        'message',
+        'is_admin_message',
+        'read_at',
     ];
 
     protected $casts = [
@@ -46,16 +52,6 @@ class ChatMessage extends Model
                 $message->conversation_id = \Illuminate\Support\Str::uuid()->toString();
             }
         });
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function admin(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'admin_id');
     }
 
     public function booking(): BelongsTo
@@ -239,5 +235,31 @@ class ChatMessage extends Model
         ]);
 
         return $message->conversation_id;
+    }
+
+    // Добавляем связь
+    public function chatSession(): BelongsTo
+    {
+        return $this->belongsTo(ChatSession::class);
+    }
+
+    public function sender(): BelongsTo
+    {
+        return $this->belongsTo(User::class, $this->is_admin_message ? 'admin_id' : 'user_id');
+    }
+
+    public function recipient(): BelongsTo
+    {
+        return $this->belongsTo(User::class, $this->is_admin_message ? 'user_id' : 'admin_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'admin_id');
     }
 }

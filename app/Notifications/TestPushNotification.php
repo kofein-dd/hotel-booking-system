@@ -5,10 +5,10 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\BroadcastMessage;
+use NotificationChannels\WebPush\WebPushMessage;
+use NotificationChannels\WebPush\WebPushChannel;
 
-class TestPushNotification extends Notification implements ShouldQueue
+class TestPushNotification extends Notification
 {
     use Queueable;
 
@@ -26,7 +26,7 @@ class TestPushNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['broadcast', 'database']; // Только для push и сохранения в БД
+        return ['database', WebPushChannel::class];
     }
 
     public function toDatabase(object $notifiable): array
@@ -42,7 +42,7 @@ class TestPushNotification extends Notification implements ShouldQueue
         ];
     }
 
-    public function toBroadcast(object $notifiable): BroadcastMessage
+    public function toWebPush($notifiable, $notification)
     {
         $title = match($this->testType) {
             'booking' => 'Тест: Уведомление о бронировании',
@@ -60,26 +60,25 @@ class TestPushNotification extends Notification implements ShouldQueue
             default => 'Тестовое уведомление отправлено ' . now()->format('H:i:s'),
         };
 
-        $icon = match($this->testType) {
-            'booking' => '🏨',
-            'message' => '💬',
-            'system' => '⚙️',
-            'alert' => '🚨',
-            default => '✅',
-        };
-
-        return new BroadcastMessage([
-            'title' => $title,
-            'body' => $body,
-            'icon' => $icon,
-            'action_url' => route('notifications.index'),
-            'test_type' => $this->testType,
-            'test_data' => $this->testData,
-            'timestamp' => now()->timestamp,
-            'vibrate' => [200, 100, 200],
-            'require_interaction' => $this->testType === 'alert',
-            'sound' => $this->testType === 'alert' ? 'alert' : 'default',
-        ]);
+        return WebPushMessage::create()
+            ->id($notification->id)
+            ->title($title)
+            ->icon('/images/logo.png')
+            ->badge('/images/badge.png')
+            ->body($body)
+            ->action('Открыть уведомления', 'view_notifications')
+            ->action('Закрыть', 'close')
+            ->data([
+                'url' => route('notifications.index'),
+                'test_type' => $this->testType,
+                'test_data' => $this->testData,
+                'timestamp' => now()->timestamp,
+            ])
+            ->options([
+                'TTL' => 86400, // 24 часа
+                'urgency' => 'normal',
+                'topic' => 'test-notification',
+            ]);
     }
 
     public function toArray(object $notifiable): array

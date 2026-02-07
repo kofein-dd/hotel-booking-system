@@ -160,4 +160,12 @@ class User extends Authenticatable
     {
         return $this->email;
     }
+
+    /**
+     * Route notifications for the WebPush channel.
+     */
+    public function routeNotificationForWebPush()
+    {
+        return $this->pushSubscriptions();
+    }
 }

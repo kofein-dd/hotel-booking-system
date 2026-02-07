@@ -63,6 +63,34 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/reviews/{review}', [FrontendReviewController::class, 'destroy'])->name('reviews.destroy');
 
     // Чат с поддержкой (будет в API)
+
+    // Маршруты для бронирований пользователя
+    Route::prefix('my-bookings')->name('bookings.')->group(function () {
+        Route::get('/', [BookingController::class, 'index'])->name('index');
+        Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
+        Route::post('/{booking}/cancel', [BookingController::class, 'cancel'])->name('cancel');
+    });
+
+    // Маршруты для чата
+    Route::prefix('chat')->name('chat.')->group(function () {
+        Route::get('/', [ChatController::class, 'index'])->name('index');
+        Route::get('/{session}', [ChatController::class, 'show'])->name('show');
+        Route::post('/{session}/message', [ChatController::class, 'sendMessage'])->name('send');
+        Route::post('/start', [ChatController::class, 'start'])->name('start');
+        Route::post('/{session}/resolve', [ChatController::class, 'resolve'])->name('resolve');
+    });
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+    Route::delete('/notifications/clear', [NotificationController::class, 'clear'])->name('notifications.clear');
+
+    // Push-подписки
+    Route::prefix('push-subscriptions')->group(function () {
+        Route::get('/', [PushSubscriptionController::class, 'index']);
+        Route::post('/', [PushSubscriptionController::class, 'store']);
+        Route::delete('/', [PushSubscriptionController::class, 'destroy']);
+        Route::post('/test', [PushSubscriptionController::class, 'sendTest']);
+    });
 });
 
 // Статические страницы (из админки)
@@ -74,3 +102,17 @@ Route::get('/sitemap.xml', [App\Http\Controllers\SitemapController::class, 'inde
 
 // Подключение маршрутов аутентификации
 require __DIR__.'/auth.php';
+
+// Публичные маршруты
+Route::get('/contact', [ContactController::class, 'index'])->name('contact');
+Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
+
+Route::get('/pages/{slug}', [PageController::class, 'show'])->name('pages.show');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/reviews/{review}', [ReviewController::class, 'show'])->name('reviews.show');
+});
+
+// FAQ маршруты
+Route::get('/faq', [FAQController::class, 'index'])->name('faq.index');
+Route::get('/faq/suggestions/{id}/status', [FAQController::class, 'suggestionStatus'])->name('faq.suggestion-status');

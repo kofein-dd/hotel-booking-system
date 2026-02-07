@@ -56,3 +56,6 @@ Route::prefix('v1')->group(function () {
         Route::post('bookings/{booking}/confirm', [\App\Http\Controllers\Api\Admin\BookingController::class, 'confirm']);
     });
 });
+
+// VAPID ключи для push-уведомлений
+Route::get('/push/vapid-public-key', [PushVapidController::class, 'getPublicKey']);

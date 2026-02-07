@@ -23,8 +23,9 @@ class BookingCancelled extends Notification implements ShouldQueue
     {
         $channels = ['database', 'mail'];
 
+        // Используем встроенную проверку из HasPushSubscriptions
         if ($notifiable->pushSubscriptions()->exists()) {
-            $channels[] = 'broadcast';
+            $channels[] = 'webpush';
         }
 
         return $channels;
@@ -90,5 +91,20 @@ class BookingCancelled extends Notification implements ShouldQueue
             'cancellation_reason' => $this->cancellationReason,
             'refund_amount' => $this->refundAmount,
         ];
+    }
+
+    public function toWebPush($notifiable, $notification)
+    {
+        return \NotificationChannels\WebPush\WebPushMessage::create()
+            ->id($notification->id)
+            ->title('✅ Бронирование подтверждено!')
+            ->icon('/images/logo.png')
+            ->body("Ваше бронирование номера {$this->booking->room->name} подтверждено")
+            ->action('Посмотреть детали', 'view_booking')
+            ->data([
+                'url' => route('bookings.show', $this->booking),
+                'booking_id' => $this->booking->id,
+                'type' => 'booking_confirmed'
+            ]);
     }
 }

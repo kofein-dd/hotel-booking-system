@@ -143,4 +143,9 @@ class Booking extends Model
         // Менее 7 дней - возврата нет
         return 0;
     }
+
+    public function statusHistories()
+    {
+        return $this->hasMany(BookingStatusHistory::class);
+    }
 }

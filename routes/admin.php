@@ -117,3 +117,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('review-reports/{reviewReport}', [\App\Http\Controllers\Admin\ReviewReportController::class, 'destroy'])->name('review-reports.destroy');
     Route::post('review-reports/{reviewReport}/resolve', [\App\Http\Controllers\Admin\ReviewReportController::class, 'resolve'])->name('review-reports.resolve');
 });
+
+Route::prefix('faq')->name('faq.')->group(function () {
+    Route::resource('suggestions', FAQSuggestionController::class);
+    Route::post('suggestions/{suggestion}/approve', [FAQSuggestionController::class, 'approve'])->name('suggestions.approve');
+    Route::post('suggestions/{suggestion}/reject', [FAQSuggestionController::class, 'reject'])->name('suggestions.reject');
+    Route::post('suggestions/{suggestion}/add-to-faq', [FAQSuggestionController::class, 'addToFaq'])->name('suggestions.add-to-faq');
+});
