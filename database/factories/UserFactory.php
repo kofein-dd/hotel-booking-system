@@ -11,9 +11,6 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
     protected static ?string $password;
 
     /**
@@ -28,6 +25,12 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'phone' => fake()->phoneNumber(),
+            'role' => fake()->randomElement(['admin', 'moderator', 'user']),
+            'status' => 'active',
+            'banned_until' => null,
+            'avatar' => null,
+            'preferences' => null,
             'remember_token' => Str::random(10),
         ];
     }
@@ -39,6 +42,49 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Admin state
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'admin',
+            'email' => 'admin@hotel.com',
+        ]);
+    }
+
+    /**
+     * Moderator state
+     */
+    public function moderator(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'moderator',
+        ]);
+    }
+
+    /**
+     * Banned state
+     */
+    public function banned(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'banned',
+            'banned_until' => now()->addDays(30),
+        ]);
+    }
+
+    /**
+     * Permanently banned
+     */
+    public function permanentlyBanned(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'banned',
+            'banned_until' => null, // null означает навсегда
         ]);
     }
 }
