@@ -3,102 +3,170 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'booking_id',
         'user_id',
+        'payment_number',
         'amount',
+        'amount_received',
+        'currency',
         'method',
         'status',
         'transaction_id',
+        'gateway_response_id',
+        'gateway_response',
         'payment_date',
-        'payment_details',
-        'currency',
-        'refund_amount',
         'refund_date',
+        'due_date',
+        'refund_amount',
         'refund_reason',
+        'refund_transaction_id',
+        'payment_details',
+        'description',
+        'metadata',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'amount_received' => 'decimal:2',
+        'refund_amount' => 'decimal:2',
         'payment_date' => 'datetime',
         'refund_date' => 'datetime',
-        'refund_amount' => 'decimal:2',
+        'due_date' => 'date',
+        'gateway_response' => 'array',
         'payment_details' => 'array',
+        'metadata' => 'array',
     ];
 
-    const METHOD_CREDIT_CARD = 'credit_card';
-    const METHOD_DEBIT_CARD = 'debit_card';
-    const METHOD_BANK_TRANSFER = 'bank_transfer';
-    const METHOD_CASH = 'cash';
-    const METHOD_ONLINE = 'online';
+    // Генерация номера платежа
+    protected static function boot()
+    {
+        parent::boot();
 
-    const STATUS_PENDING = 'pending';
-    const STATUS_COMPLETED = 'completed';
-    const STATUS_FAILED = 'failed';
-    const STATUS_REFUNDED = 'refunded';
-    const STATUS_PARTIAL_REFUND = 'partial_refund';
+        static::creating(function ($payment) {
+            if (!$payment->payment_number) {
+                $payment->payment_number = 'PAY-' . strtoupper(uniqid());
+            }
+        });
+    }
 
-    const CURRENCY_RUB = 'RUB';
-    const CURRENCY_USD = 'USD';
-    const CURRENCY_EUR = 'EUR';
-
-    // Отношения
-    public function booking()
+    public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    // Скоупы
-    public function scopeCompleted($query)
+    // Проверка, является ли платеж успешным
+    public function isSuccessful(): bool
     {
-        return $query->where('status', self::STATUS_COMPLETED);
+        return in_array($this->status, ['completed', 'processing']);
     }
 
-    public function scopePending($query)
+    // Проверка, является ли платеж ожидающим
+    public function isPending(): bool
     {
-        return $query->where('status', self::STATUS_PENDING);
+        return $this->status === 'pending';
     }
 
-    public function scopeFailed($query)
+    // Проверка, был ли платеж возвращен
+    public function isRefunded(): bool
     {
-        return $query->where('status', self::STATUS_FAILED);
+        return in_array($this->status, ['refunded', 'partially_refunded']);
     }
 
-    public function scopeRefunded($query)
+    // Получить сумму, доступную для возврата
+    public function getAvailableForRefund(): float
     {
-        return $query->where('status', self::STATUS_REFUNDED);
+        if (!$this->isSuccessful()) {
+            return 0;
+        }
+
+        $refunded = $this->refund_amount ?? 0;
+        return $this->amount_received - $refunded;
     }
 
-    // Методы
-    public function markAsCompleted($transactionId = null)
+    // Создать возврат
+    public function createRefund(float $amount, string $reason = null): bool
     {
-        $this->update([
-            'status' => self::STATUS_COMPLETED,
-            'payment_date' => now(),
-            'transaction_id' => $transactionId ?? $this->transaction_id,
-        ]);
+        if ($amount > $this->getAvailableForRefund()) {
+            return false;
+        }
+
+        $this->refund_amount = ($this->refund_amount ?? 0) + $amount;
+        $this->refund_reason = $reason;
+        $this->refund_date = now();
+
+        if ($this->refund_amount >= $this->amount_received) {
+            $this->status = 'refunded';
+        } else {
+            $this->status = 'partially_refunded';
+        }
+
+        return $this->save();
     }
 
-    public function refund($amount = null, $reason = null)
+    // Обновить статус платежа
+    public function updateStatus(string $status, array $gatewayData = null): void
     {
-        $refundAmount = $amount ?? $this->amount;
+        $this->status = $status;
 
-        $this->update([
-            'status' => $refundAmount < $this->amount ? self::STATUS_PARTIAL_REFUND : self::STATUS_REFUNDED,
-            'refund_amount' => $refundAmount,
-            'refund_date' => now(),
-            'refund_reason' => $reason,
-        ]);
+        if ($gatewayData) {
+            $this->gateway_response = $gatewayData;
+            $this->gateway_response_id = $gatewayData['id'] ?? null;
+            $this->transaction_id = $gatewayData['transaction_id'] ?? $this->transaction_id;
+
+            if ($status === 'completed' && !$this->payment_date) {
+                $this->payment_date = now();
+                $this->amount_received = $gatewayData['amount_received'] ?? $this->amount;
+            }
+        }
+
+        $this->save();
+    }
+
+    // Получить детали платежа для отображения
+    public function getPaymentDetailsForDisplay(): array
+    {
+        $details = $this->payment_details ?? [];
+
+        switch ($this->method) {
+            case 'credit_card':
+            case 'debit_card':
+                return [
+                    'method' => 'Карта',
+                    'details' => $details['card_last4'] ?? '****',
+                    'icon' => 'credit-card'
+                ];
+            case 'paypal':
+                return [
+                    'method' => 'PayPal',
+                    'details' => $details['email'] ?? '',
+                    'icon' => 'paypal'
+                ];
+            case 'bank_transfer':
+                return [
+                    'method' => 'Банковский перевод',
+                    'details' => $details['account'] ?? '',
+                    'icon' => 'bank'
+                ];
+            default:
+                return [
+                    'method' => ucfirst(str_replace('_', ' ', $this->method)),
+                    'details' => '',
+                    'icon' => 'payment'
+                ];
+        }
     }
 }

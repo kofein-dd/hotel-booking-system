@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Model;
 
 class Hotel extends Model
 {
@@ -13,38 +13,48 @@ class Hotel extends Model
     protected $fillable = [
         'name',
         'description',
+        'slug',
         'photos',
         'videos',
-        'coordinates',
+        'address',
+        'city',
+        'country',
+        'latitude',
+        'longitude',
+        'phone',
+        'email',
+        'website',
         'contact_info',
-        'status',
-        'working_days',
-        'check_in_time',
-        'check_out_time',
-        'rules',
         'amenities',
         'social_links',
+        'status',
+        'non_working_days',
+        'settings',
     ];
 
     protected $casts = [
         'photos' => 'array',
         'videos' => 'array',
-        'coordinates' => 'array',
         'contact_info' => 'array',
-        'working_days' => 'array',
-        'rules' => 'array',
         'amenities' => 'array',
         'social_links' => 'array',
+        'non_working_days' => 'array',
+        'settings' => 'array',
     ];
 
-    const STATUS_ACTIVE = 'active';
-    const STATUS_INACTIVE = 'inactive';
-    const STATUS_MAINTENANCE = 'maintenance';
-
-    // Отношения
     public function rooms()
     {
         return $this->hasMany(Room::class);
+    }
+
+    public function activeRooms()
+    {
+        return $this->rooms()->where('status', 'available');
+    }
+
+    public function reviews()
+    {
+        return $this->hasManyThrough(Review::class, Room::class);
     }
 
     public function bookings()
@@ -52,22 +62,23 @@ class Hotel extends Model
         return $this->hasManyThrough(Booking::class, Room::class);
     }
 
-    public function reviews()
+    public function isActive(): bool
     {
-        return $this->hasMany(Review::class);
+        return $this->status === 'active';
     }
 
-    // Скоупы
-    public function scopeActive($query)
+    public function isOnNonWorkingDay(\Carbon\Carbon $date): bool
     {
-        return $query->where('status', self::STATUS_ACTIVE);
+        if (!$this->non_working_days) {
+            return false;
+        }
+
+        return in_array($date->toDateString(), $this->non_working_days);
     }
 
-    public function scopeAvailable($query)
+    public function getMainPhotoAttribute()
     {
-        return $query->where('status', self::STATUS_ACTIVE)
-            ->whereHas('rooms', function ($q) {
-                $q->where('status', Room::STATUS_AVAILABLE);
-            });
+        $photos = $this->photos;
+        return $photos ? $photos[0] : null;
     }
 }

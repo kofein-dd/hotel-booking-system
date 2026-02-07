@@ -3,118 +3,198 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Review extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
         'booking_id',
-        'hotel_id',
         'room_id',
-        'rating',
+        'hotel_id',
+        'rating_overall',
+        'rating_cleanliness',
+        'rating_comfort',
+        'rating_location',
+        'rating_service',
+        'rating_value',
         'title',
         'comment',
-        'advantages',
-        'disadvantages',
-        'is_verified',
+        'pros',
+        'cons',
+        'photos',
+        'videos',
         'status',
-        'response',
-        'response_date',
+        'hotel_reply',
+        'hotel_reply_at',
+        'hotel_reply_by',
+        'helpful_count',
+        'unhelpful_count',
+        'metadata',
     ];
 
     protected $casts = [
-        'rating' => 'integer',
-        'is_verified' => 'boolean',
-        'response_date' => 'datetime',
-        'advantages' => 'array',
-        'disadvantages' => 'array',
+        'photos' => 'array',
+        'videos' => 'array',
+        'hotel_reply_at' => 'datetime',
+        'metadata' => 'array',
+        'rating_overall' => 'integer',
+        'rating_cleanliness' => 'integer',
+        'rating_comfort' => 'integer',
+        'rating_location' => 'integer',
+        'rating_service' => 'integer',
+        'rating_value' => 'integer',
     ];
 
-    const STATUS_PENDING = 'pending';
-    const STATUS_APPROVED = 'approved';
-    const STATUS_REJECTED = 'rejected';
+    // Валидация рейтингов при сохранении
+    protected static function boot()
+    {
+        parent::boot();
 
-    // Отношения
-    public function user()
+        static::saving(function ($review) {
+            // Ограничиваем рейтинг от 1 до 5
+            $ratingFields = [
+                'rating_overall',
+                'rating_cleanliness',
+                'rating_comfort',
+                'rating_location',
+                'rating_service',
+                'rating_value',
+            ];
+
+            foreach ($ratingFields as $field) {
+                if (!is_null($review->$field)) {
+                    $review->$field = max(1, min(5, $review->$field));
+                }
+            }
+        });
+    }
+
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function booking()
+    public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
     }
 
-    public function hotel()
-    {
-        return $this->belongsTo(Hotel::class);
-    }
-
-    public function room()
+    public function room(): BelongsTo
     {
         return $this->belongsTo(Room::class);
     }
 
-    // Скоупы
-    public function scopeApproved($query)
+    public function hotel(): BelongsTo
     {
-        return $query->where('status', self::STATUS_APPROVED);
+        return $this->belongsTo(Hotel::class);
     }
 
-    public function scopePending($query)
+    public function replyAuthor(): BelongsTo
     {
-        return $query->where('status', self::STATUS_PENDING);
+        return $this->belongsTo(User::class, 'hotel_reply_by');
     }
 
-    public function scopeVerified($query)
+    public function reports(): HasMany
     {
-        return $query->where('is_verified', true);
+        return $this->hasMany(ReviewReport::class);
     }
 
-    public function scopeForHotel($query, $hotelId)
+    // Проверка, одобрен ли отзыв
+    public function isApproved(): bool
     {
-        return $query->where('hotel_id', $hotelId);
+        return $this->status === 'approved';
     }
 
-    public function scopeForRoom($query, $roomId)
+    // Проверка, находится ли на модерации
+    public function isPending(): bool
     {
-        return $query->where('room_id', $roomId);
+        return $this->status === 'pending';
     }
 
-    public function scopeWithRating($query, $minRating = 1)
+    // Проверка, можно ли редактировать отзыв (в течение 24 часов после создания)
+    public function canBeEdited(): bool
     {
-        return $query->where('rating', '>=', $minRating);
+        return $this->created_at->diffInHours(now()) <= 24 && $this->isPending();
     }
 
-    // Методы
-    public function approve()
+    // Расчет общего рейтинга из категорий
+    public function calculateOverallRating(): float
     {
-        $this->update(['status' => self::STATUS_APPROVED]);
+        $ratings = [
+            $this->rating_cleanliness,
+            $this->rating_comfort,
+            $this->rating_location,
+            $this->rating_service,
+            $this->rating_value,
+        ];
+
+        $validRatings = array_filter($ratings, function($rating) {
+            return !is_null($rating);
+        });
+
+        if (empty($validRatings)) {
+            return $this->rating_overall;
+        }
+
+        return round(array_sum($validRatings) / count($validRatings), 1);
     }
 
-    public function reject()
+    // Получить оценку в виде звезд (HTML)
+    public function getStarsHtml(): string
     {
-        $this->update(['status' => self::STATUS_REJECTED]);
+        $rating = $this->rating_overall;
+        $stars = '';
+
+        for ($i = 1; $i <= 5; $i++) {
+            if ($i <= $rating) {
+                $stars .= '<i class="fas fa-star text-warning"></i>';
+            } elseif ($i - 0.5 <= $rating) {
+                $stars .= '<i class="fas fa-star-half-alt text-warning"></i>';
+            } else {
+                $stars .= '<i class="far fa-star text-warning"></i>';
+            }
+        }
+
+        return $stars;
     }
 
-    public function addResponse($response)
+    // Добавить голос "полезно"
+    public function markHelpful(): void
     {
-        $this->update([
-            'response' => $response,
-            'response_date' => now(),
-        ]);
+        $this->increment('helpful_count');
     }
 
-    public function isApproved()
+    // Добавить голос "не полезно"
+    public function markUnhelpful(): void
     {
-        return $this->status === self::STATUS_APPROVED;
+        $this->increment('unhelpful_count');
     }
 
-    public function getRatingStarsAttribute()
+    // Добавить ответ от отеля
+    public function addHotelReply(string $reply, User $user): void
     {
-        return str_repeat('★', $this->rating) . str_repeat('☆', 5 - $this->rating);
+        $this->hotel_reply = $reply;
+        $this->hotel_reply_at = now();
+        $this->hotel_reply_by = $user->id;
+        $this->save();
+    }
+
+    // Получить средний рейтинг по всем категориям
+    public function getAverageRatings(): array
+    {
+        return [
+            'overall' => $this->rating_overall,
+            'cleanliness' => $this->rating_cleanliness,
+            'comfort' => $this->rating_comfort,
+            'location' => $this->rating_location,
+            'service' => $this->rating_service,
+            'value' => $this->rating_value,
+        ];
     }
 }

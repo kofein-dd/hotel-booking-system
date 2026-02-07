@@ -3,117 +3,144 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Booking extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'booking_number',
         'user_id',
         'room_id',
+        'hotel_id',
         'check_in',
         'check_out',
+        'nights',
         'guests_count',
+        'room_price_per_night',
+        'subtotal',
+        'discount_amount',
+        'tax_amount',
+        'extra_charges',
         'total_price',
+        'currency',
         'status',
-        'cancellation_date',
+        'guest_info',
+        'additional_guests',
+        'cancelled_at',
         'cancellation_reason',
+        'refund_amount',
         'special_requests',
-        'booking_source',
-        'payment_status',
-        'confirmation_number',
+        'metadata',
     ];
 
     protected $casts = [
         'check_in' => 'date',
         'check_out' => 'date',
-        'cancellation_date' => 'datetime',
+        'guest_info' => 'array',
+        'additional_guests' => 'array',
+        'metadata' => 'array',
+        'cancelled_at' => 'datetime',
+        'room_price_per_night' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'extra_charges' => 'decimal:2',
         'total_price' => 'decimal:2',
-        'special_requests' => 'array',
+        'refund_amount' => 'decimal:2',
     ];
 
-    const STATUS_PENDING = 'pending';
-    const STATUS_CONFIRMED = 'confirmed';
-    const STATUS_CANCELLED = 'cancelled';
-    const STATUS_COMPLETED = 'completed';
-    const STATUS_NO_SHOW = 'no_show';
-    const STATUS_REFUNDED = 'refunded';
+    // Генерация номера брони
+    protected static function boot()
+    {
+        parent::boot();
 
-    const PAYMENT_STATUS_PENDING = 'pending';
-    const PAYMENT_STATUS_PAID = 'paid';
-    const PAYMENT_STATUS_PARTIAL = 'partial';
-    const PAYMENT_STATUS_REFUNDED = 'refunded';
-    const PAYMENT_STATUS_FAILED = 'failed';
+        static::creating(function ($booking) {
+            if (!$booking->booking_number) {
+                $booking->booking_number = 'BOOK-' . strtoupper(uniqid());
+            }
+        });
+    }
 
-    // Отношения
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function room()
+    public function room(): BelongsTo
     {
         return $this->belongsTo(Room::class);
     }
 
-    public function payments()
+    public function hotel(): BelongsTo
     {
-        return $this->hasMany(Payment::class);
+        return $this->belongsTo(Hotel::class);
     }
 
-    public function notifications()
+    public function payment(): HasOne
+    {
+        return $this->hasOne(Payment::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function notifications(): HasMany
     {
         return $this->hasMany(Notification::class);
     }
 
-    // Вычисляемые атрибуты
-    public function getNightsAttribute()
+    // Проверка возможности отмены
+    public function canBeCancelled(): bool
     {
-        return $this->check_in->diffInDays($this->check_out);
-    }
-
-    public function getIsActiveAttribute()
-    {
-        return in_array($this->status, [self::STATUS_PENDING, self::STATUS_CONFIRMED]);
-    }
-
-    public function getCanCancelAttribute()
-    {
-        if ($this->status !== self::STATUS_CONFIRMED) {
+        if ($this->status !== 'confirmed' && $this->status !== 'pending') {
             return false;
         }
 
-        // Проверка отмены за месяц до заезда
-        return now()->diffInDays($this->check_in, false) >= 30;
+        $daysBeforeCheckIn = now()->diffInDays($this->check_in, false);
+
+        // Можно отменить за 30 дней до заезда
+        return $daysBeforeCheckIn >= 30;
     }
 
-    // Скоупы
-    public function scopeActive($query)
+    // Проверка актуальности брони
+    public function isActive(): bool
     {
-        return $query->whereIn('status', [self::STATUS_PENDING, self::STATUS_CONFIRMED]);
+        return in_array($this->status, ['pending', 'confirmed']) &&
+            $this->check_out > now();
     }
 
-    public function scopeConfirmed($query)
+    // Получить дату напоминания (за 2 дня до заезда)
+    public function getReminderDateAttribute()
     {
-        return $query->where('status', self::STATUS_CONFIRMED);
+        return $this->check_in->subDays(2);
     }
 
-    public function scopeCancelled($query)
+    // Рассчитать сумму возврата при отмене
+    public function calculateRefund($cancellationDate = null): float
     {
-        return $query->where('status', self::STATUS_CANCELLED);
-    }
+        $cancellationDate = $cancellationDate ?: now();
+        $daysBeforeCheckIn = $cancellationDate->diffInDays($this->check_in, false);
 
-    public function scopeForDates($query, $checkIn, $checkOut)
-    {
-        return $query->where(function ($q) use ($checkIn, $checkOut) {
-            $q->whereBetween('check_in', [$checkIn, $checkOut])
-                ->orWhereBetween('check_out', [$checkIn, $checkOut])
-                ->orWhere(function ($query) use ($checkIn, $checkOut) {
-                    $query->where('check_in', '<=', $checkIn)
-                        ->where('check_out', '>=', $checkOut);
-                });
-        });
+        if ($daysBeforeCheckIn >= 30) {
+            // Полный возврат за 30+ дней
+            return $this->total_price;
+        } elseif ($daysBeforeCheckIn >= 14) {
+            // 50% возврат за 14-29 дней
+            return $this->total_price * 0.5;
+        } elseif ($daysBeforeCheckIn >= 7) {
+            // 25% возврат за 7-13 дней
+            return $this->total_price * 0.25;
+        }
+
+        // Менее 7 дней - возврата нет
+        return 0;
     }
 }

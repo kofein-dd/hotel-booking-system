@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Room extends Model
 {
@@ -12,92 +14,80 @@ class Room extends Model
 
     protected $fillable = [
         'hotel_id',
-        'room_number',
-        'type',
         'name',
+        'type',
+        'slug',
         'description',
         'capacity',
         'price_per_night',
-        'photos',
-        'videos',
+        'total_rooms',
+        'available_rooms',
         'amenities',
-        'status',
+        'photos',
         'size',
-        'bed_type',
+        'bed_types',
         'view',
-        'floor',
-        'extra_beds',
-        'extra_bed_price',
-        'max_occupancy',
+        'extra_services',
+        'status',
+        'order',
+        'settings',
     ];
 
     protected $casts = [
-        'photos' => 'array',
-        'videos' => 'array',
         'amenities' => 'array',
-        'price_per_night' => 'decimal:2',
-        'extra_bed_price' => 'decimal:2',
+        'photos' => 'array',
+        'bed_types' => 'array',
+        'view' => 'array',
+        'extra_services' => 'array',
+        'settings' => 'array',
     ];
 
-    const TYPE_STANDARD = 'standard';
-    const TYPE_SUPERIOR = 'superior';
-    const TYPE_DELUXE = 'deluxe';
-    const TYPE_SUITE = 'suite';
-    const TYPE_PRESIDENTIAL = 'presidential';
-
-    const STATUS_AVAILABLE = 'available';
-    const STATUS_OCCUPIED = 'occupied';
-    const STATUS_MAINTENANCE = 'maintenance';
-    const STATUS_RESERVED = 'reserved';
-
-    const BED_TYPE_SINGLE = 'single';
-    const BED_TYPE_DOUBLE = 'double';
-    const BED_TYPE_TWIN = 'twin';
-    const BED_TYPE_QUEEN = 'queen';
-    const BED_TYPE_KING = 'king';
-
-    // Отношения
-    public function hotel()
+    public function hotel(): BelongsTo
     {
         return $this->belongsTo(Hotel::class);
     }
 
-    public function bookings()
+    public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
     }
 
-    public function reviews()
+    public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
     }
 
-    // Методы проверки доступности
-    public function isAvailableForDates($checkIn, $checkOut)
+    public function isAvailable(): bool
     {
-        return !$this->bookings()
-            ->where(function ($query) use ($checkIn, $checkOut) {
-                $query->whereBetween('check_in', [$checkIn, $checkOut])
-                    ->orWhereBetween('check_out', [$checkIn, $checkOut])
-                    ->orWhere(function ($q) use ($checkIn, $checkOut) {
-                        $q->where('check_in', '<=', $checkIn)
-                            ->where('check_out', '>=', $checkOut);
-                    });
-            })
-            ->whereIn('status', [Booking::STATUS_CONFIRMED, Booking::STATUS_PENDING])
-            ->exists();
+        return $this->status === 'available' && $this->available_rooms > 0;
     }
 
-    public function getPriceForDates($nights, $guests = 1)
+    public function getMainPhotoAttribute()
     {
-        $basePrice = $this->price_per_night * $nights;
+        $photos = $this->photos;
+        return $photos ? $photos[0] : null;
+    }
 
-        // Доплата за дополнительных гостей (если больше capacity)
-        if ($guests > $this->capacity) {
-            $extraGuests = $guests - $this->capacity;
-            // TODO: Добавить логику расчета доплат
+    public function getPriceForDates($nights, $guests = null)
+    {
+        $price = $this->price_per_night * $nights;
+
+        // Доп. логика расчета (например, доплата за гостей)
+        if ($guests && $guests > $this->capacity) {
+            // Можно добавить логику доплаты
         }
 
-        return $basePrice;
+        return $price;
+    }
+
+    public function updateAvailability()
+    {
+        $activeBookings = $this->bookings()
+            ->whereIn('status', ['confirmed', 'pending'])
+            ->where('check_out', '>', now())
+            ->count();
+
+        $this->available_rooms = max(0, $this->total_rooms - $activeBookings);
+        $this->save();
     }
 }

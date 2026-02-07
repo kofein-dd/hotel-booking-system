@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Permission\Traits\HasRoles;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -35,15 +36,22 @@ class User extends Authenticatable
         'preferences' => 'array',
     ];
 
-    const ROLE_ADMIN = 'admin';
-    const ROLE_MODERATOR = 'moderator';
-    const ROLE_USER = 'user';
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
 
-    const STATUS_ACTIVE = 'active';
-    const STATUS_INACTIVE = 'inactive';
-    const STATUS_BANNED = 'banned';
+    public function isModerator(): bool
+    {
+        return $this->role === 'moderator';
+    }
 
-    // Отношения
+    public function isBanned(): bool
+    {
+        return $this->status === 'banned' ||
+            ($this->banned_until && $this->banned_until->isFuture());
+    }
+
     public function bookings()
     {
         return $this->hasMany(Booking::class);
@@ -54,45 +62,18 @@ class User extends Authenticatable
         return $this->hasMany(Review::class);
     }
 
-    public function notifications()
-    {
-        return $this->hasMany(Notification::class);
-    }
-
     public function chatMessages()
     {
         return $this->hasMany(ChatMessage::class);
     }
 
-    public function banLogs()
+    public function notifications()
     {
-        return $this->hasMany(BanLog::class);
+        return $this->hasMany(Notification::class);
     }
 
-    // Методы проверки ролей
-    public function isAdmin()
+    public function bans()
     {
-        return $this->role === self::ROLE_ADMIN;
-    }
-
-    public function isModerator()
-    {
-        return $this->role === self::ROLE_MODERATOR;
-    }
-
-    public function isUser()
-    {
-        return $this->role === self::ROLE_USER;
-    }
-
-    public function isBanned()
-    {
-        return $this->status === self::STATUS_BANNED ||
-            ($this->banned_until && $this->banned_until->isFuture());
-    }
-
-    public function hasRole($role): bool
-    {
-        return $this->role === $role;
+        return $this->hasMany(BanList::class, 'user_id');
     }
 }
