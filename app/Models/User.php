@@ -90,4 +90,9 @@ class User extends Authenticatable
         return $this->status === self::STATUS_BANNED ||
             ($this->banned_until && $this->banned_until->isFuture());
     }
+
+    public function hasRole($role): bool
+    {
+        return $this->role === $role;
+    }
 }
