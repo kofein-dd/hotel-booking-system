@@ -81,4 +81,11 @@ class Hotel extends Model
         $photos = $this->photos;
         return $photos ? $photos[0] : null;
     }
+
+    public function facilities()
+    {
+        return $this->belongsToMany(Facility::class, 'facility_hotel')
+            ->withPivot('description', 'is_available')
+            ->withTimestamps();
+    }
 }

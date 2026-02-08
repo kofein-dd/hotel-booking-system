@@ -90,4 +90,11 @@ class Room extends Model
         $this->available_rooms = max(0, $this->total_rooms - $activeBookings);
         $this->save();
     }
+
+    public function facilities()
+    {
+        return $this->belongsToMany(Facility::class, 'facility_hotel')
+            ->withPivot('description', 'is_available')
+            ->withTimestamps();
+    }
 }
