@@ -743,4 +743,12 @@ class AuthController extends Controller
 
         return view('auth.maintenance');
     }
+
+    /**
+     * Показать форму регистрации
+     */
+    public function showRegisterForm()
+    {
+        return view('auth.register');
+    }
 }
