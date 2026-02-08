@@ -1,40 +1,32 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
+use App\Http\Controllers\CronController;
 
-/*
-|--------------------------------------------------------------------------
-| Console Routes
-|--------------------------------------------------------------------------
-|
-| This file is where you may define all of your Closure based console
-| commands. Each Closure is bound to a command instance allowing a
-| simple approach to interacting with each command's IO methods.
-|
-*/
+// Очистка старых токенов каждый день
+Schedule::command('sanctum:prune-expired --hours=24')->daily();
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// Очистка старых сессий
+Schedule::command('session:gc')->daily();
 
-// Кастомные команды
-Artisan::command('booking:send-reminders', function () {
-    $this->info('Sending booking reminders...');
-    // Логика отправки напоминаний
-})->purpose('Send booking reminders to users');
+// Очистка кэша раз в неделю
+Schedule::command('cache:clear')->weekly();
 
-Artisan::command('booking:cleanup-expired', function () {
-    $this->info('Cleaning up expired bookings...');
-    // Логика очистки просроченных бронирований
-})->purpose('Clean up expired bookings');
+// Создание резервных копий базы данных
+Schedule::command('backup:run')->dailyAt('02:00');
 
-Artisan::command('backup:create', function () {
-    $this->info('Creating database backup...');
-    // Логика создания бэкапа
-})->purpose('Create database backup');
+// Отправка напоминаний о бронированиях
+Schedule::call([CronController::class, 'sendBookingReminders'])
+    ->dailyAt('09:00');
 
-Artisan::command('backup:restore {filename}', function ($filename) {
-    $this->info("Restoring backup from {$filename}...");
-    // Логика восстановления бэкапа
-})->purpose('Restore database from backup');
+// Отмена просроченных бронирований
+Schedule::call([CronController::class, 'cancelExpiredBookings'])
+    ->dailyAt('03:00');
+
+// Очистка старых уведомлений
+Schedule::call([CronController::class, 'cleanupOldNotifications'])
+    ->weekly();
+
+// Сбор статистики
+Schedule::call([CronController::class, 'collectStatistics'])
+    ->dailyAt('23:00');

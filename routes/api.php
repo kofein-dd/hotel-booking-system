@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\RoomController;
@@ -12,6 +11,7 @@ use App\Http\Controllers\Api\PushVapidController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\Admin\RoomController as AdminRoomController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,80 +30,102 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
-// Номера (публичные)
+// Публичные данные
 Route::get('/rooms', [RoomController::class, 'index']);
 Route::get('/rooms/{room}', [RoomController::class, 'show']);
-Route::post('/rooms/availability', [RoomController::class, 'checkAvailability']);
+Route::get('/rooms/{room}/availability', [RoomController::class, 'checkAvailability']);
 
-// VAPID ключи для push-уведомлений
-Route::get('/push/vapid-public-key', [PushVapidController::class, 'getPublicKey']);
+// Push подписки (публичные)
+Route::get('/push/vapid-key', [PushVapidController::class, 'getKey']);
+Route::post('/push/subscribe', [PushSubscriptionController::class, 'subscribe']);
+Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'unsubscribe']);
 
-// Защищенные API маршруты (требуют аутентификации)
+// Защищенные API маршруты (требуется аутентификация)
 Route::middleware(['auth:sanctum'])->group(function () {
+
+    // Аутентификация
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/user', [AuthController::class, 'user']);
+    Route::post('/email/verify/resend', [AuthController::class, 'resendVerificationEmail']);
+
     // Профиль
-    Route::get('/profile', [ProfileController::class, 'show']);
-    Route::put('/profile', [ProfileController::class, 'update']);
-    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
-
-    // Бронирования
-    Route::get('/bookings', [BookingController::class, 'index']);
-    Route::post('/bookings', [BookingController::class, 'store']);
-    Route::get('/bookings/{booking}', [BookingController::class, 'show']);
-    Route::put('/bookings/{booking}', [BookingController::class, 'update']);
-    Route::delete('/bookings/{booking}', [BookingController::class, 'destroy']);
-    Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
-    Route::get('/bookings/{booking}/invoice', [BookingController::class, 'invoice']);
-
-    // Чат
-    Route::get('/chat/sessions', [ChatController::class, 'sessions']);
-    Route::post('/chat/sessions', [ChatController::class, 'createSession']);
-    Route::get('/chat/sessions/{session}/messages', [ChatController::class, 'messages']);
-    Route::post('/chat/sessions/{session}/messages', [ChatController::class, 'sendMessage']);
-    Route::put('/chat/messages/{message}/read', [ChatController::class, 'markAsRead']);
-    Route::post('/chat/sessions/{session}/resolve', [ChatController::class, 'resolveSession']);
-
-    // Уведомления
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::put('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
-    Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
-    Route::delete('/notifications/clear', [NotificationController::class, 'clear']);
-
-    // Push-подписки
-    Route::prefix('push-subscriptions')->group(function () {
-        Route::get('/', [PushSubscriptionController::class, 'index']);
-        Route::post('/', [PushSubscriptionController::class, 'store']);
-        Route::delete('/', [PushSubscriptionController::class, 'destroy']);
-        Route::post('/test', [PushSubscriptionController::class, 'sendTest']);
+    Route::prefix('profile')->group(function () {
+        Route::get('/', [ProfileController::class, 'show']);
+        Route::put('/', [ProfileController::class, 'update']);
+        Route::put('/password', [ProfileController::class, 'updatePassword']);
+        Route::put('/notification-settings', [ProfileController::class, 'updateNotificationSettings']);
     });
 
-    // Выход
-    Route::post('/logout', [AuthController::class, 'logout']);
-});
-
-// API маршруты для администраторов
-Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
-    // Пользователи
-    Route::get('/users', [AdminUserController::class, 'index']);
-    Route::post('/users', [AdminUserController::class, 'store']);
-    Route::get('/users/{user}', [AdminUserController::class, 'show']);
-    Route::put('/users/{user}', [AdminUserController::class, 'update']);
-    Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
-    Route::post('/users/{user}/ban', [AdminUserController::class, 'ban']);
-    Route::post('/users/{user}/unban', [AdminUserController::class, 'unban']);
-
     // Бронирования
-    Route::get('/bookings', [AdminBookingController::class, 'index']);
-    Route::get('/bookings/{booking}', [AdminBookingController::class, 'show']);
-    Route::put('/bookings/{booking}', [AdminBookingController::class, 'update']);
-    Route::post('/bookings/{booking}/confirm', [AdminBookingController::class, 'confirm']);
-    Route::post('/bookings/{booking}/cancel', [AdminBookingController::class, 'cancel']);
-    Route::post('/bookings/{booking}/complete', [AdminBookingController::class, 'complete']);
+    Route::prefix('bookings')->group(function () {
+        Route::get('/', [BookingController::class, 'index']);
+        Route::post('/', [BookingController::class, 'store']);
+        Route::get('/{booking}', [BookingController::class, 'show']);
+        Route::post('/{booking}/cancel', [BookingController::class, 'cancel']);
+        Route::get('/{booking}/invoice', [BookingController::class, 'invoice']);
+    });
 
     // Номера
-    Route::get('/rooms', [AdminRoomController::class, 'index']);
-    Route::post('/rooms', [AdminRoomController::class, 'store']);
-    Route::get('/rooms/{room}', [AdminRoomController::class, 'show']);
-    Route::put('/rooms/{room}', [AdminRoomController::class, 'update']);
-    Route::delete('/rooms/{room}', [AdminRoomController::class, 'destroy']);
-    Route::post('/rooms/{room}/toggle-status', [AdminRoomController::class, 'toggleStatus']);
+    Route::prefix('rooms')->group(function () {
+        Route::post('/{room}/book', [RoomController::class, 'book']);
+        Route::post('/{room}/favorite', [RoomController::class, 'toggleFavorite']);
+        Route::get('/favorites', [RoomController::class, 'favorites']);
+    });
+
+    // Чат
+    Route::prefix('chat')->group(function () {
+        Route::get('/', [ChatController::class, 'index']);
+        Route::post('/', [ChatController::class, 'start']);
+        Route::get('/{session}', [ChatController::class, 'show']);
+        Route::post('/{session}/message', [ChatController::class, 'sendMessage']);
+        Route::put('/{session}/close', [ChatController::class, 'close']);
+    });
+
+    // Уведомления
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::put('/{notification}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+        Route::delete('/{notification}', [NotificationController::class, 'destroy']);
+    });
+
+    // Push уведомления
+    Route::post('/push/send-test', [PushSubscriptionController::class, 'sendTestNotification']);
+});
+
+// Административные API маршруты
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+
+    // Пользователи
+    Route::prefix('users')->group(function () {
+        Route::get('/', [AdminUserController::class, 'index']);
+        Route::post('/', [AdminUserController::class, 'store']);
+        Route::get('/{user}', [AdminUserController::class, 'show']);
+        Route::put('/{user}', [AdminUserController::class, 'update']);
+        Route::delete('/{user}', [AdminUserController::class, 'destroy']);
+        Route::post('/{user}/ban', [AdminUserController::class, 'ban']);
+        Route::post('/{user}/unban', [AdminUserController::class, 'unban']);
+    });
+
+    // Бронирования
+    Route::prefix('bookings')->group(function () {
+        Route::get('/', [AdminBookingController::class, 'index']);
+        Route::get('/{booking}', [AdminBookingController::class, 'show']);
+        Route::put('/{booking}', [AdminBookingController::class, 'update']);
+        Route::post('/{booking}/confirm', [AdminBookingController::class, 'confirm']);
+        Route::post('/{booking}/cancel', [AdminBookingController::class, 'cancel']);
+        Route::post('/{booking}/check-in', [AdminBookingController::class, 'checkIn']);
+        Route::post('/{booking}/check-out', [AdminBookingController::class, 'checkOut']);
+    });
+
+    // Номера
+    Route::prefix('rooms')->group(function () {
+        Route::get('/', [AdminRoomController::class, 'index']);
+        Route::post('/', [AdminRoomController::class, 'store']);
+        Route::get('/{room}', [AdminRoomController::class, 'show']);
+        Route::put('/{room}', [AdminRoomController::class, 'update']);
+        Route::delete('/{room}', [AdminRoomController::class, 'destroy']);
+        Route::post('/{room}/toggle-status', [AdminRoomController::class, 'toggleStatus']);
+        Route::post('/{room}/block-dates', [AdminRoomController::class, 'blockDates']);
+    });
 });
