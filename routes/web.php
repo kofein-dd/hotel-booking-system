@@ -59,6 +59,21 @@ Route::middleware('guest')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
 });
 
+// FAQ маршруты - ДОБАВЛЯЕМ ЭТОТ БЛОК
+Route::get('/faq', [FAQController::class, 'index'])->name('faq.index');
+
+// Публичные маршруты для отелей
+Route::prefix('hotels')->name('hotels.')->group(function () {
+    Route::get('/', [HomeController::class, 'hotels'])->name('index');
+    Route::get('/{slug}', [HomeController::class, 'hotelShow'])->name('show');
+});
+
+// Публичные маршруты для номеров
+Route::prefix('rooms')->name('rooms.')->group(function () {
+    Route::get('/', [HomeController::class, 'rooms'])->name('index');
+    Route::get('/{slug}', [HomeController::class, 'roomShow'])->name('show');
+});
+
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
 // Подтверждение email

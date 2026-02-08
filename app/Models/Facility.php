@@ -20,6 +20,11 @@ class Facility extends Model
         'sort_order',
     ];
 
+    protected $attributes = [
+        'is_active' => true,
+        'sort_order' => 0,
+    ];
+
     protected $casts = [
         'is_active' => 'boolean',
         'sort_order' => 'integer',
@@ -41,6 +46,8 @@ class Facility extends Model
             ->withTimestamps();
     }
 
+    // Scopes:
+
     // Scope для активных удобств
     public function scopeActive($query)
     {
@@ -57,5 +64,12 @@ class Facility extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order')->orderBy('name');
+    }
+
+    // Scope для поиска по названию
+    public function scopeSearch($query, $search)
+    {
+        return $query->where('name', 'like', '%' . $search . '%')
+            ->orWhere('description', 'like', '%' . $search . '%');
     }
 }

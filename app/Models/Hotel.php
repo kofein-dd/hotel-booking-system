@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Hotel extends Model
 {
@@ -12,34 +12,45 @@ class Hotel extends Model
 
     protected $fillable = [
         'name',
-        'description',
         'slug',
-        'photos',
-        'videos',
+        'description',
         'address',
         'city',
         'country',
-        'latitude',
-        'longitude',
         'phone',
         'email',
         'website',
-        'contact_info',
+        'stars',
+        'check_in_time',
+        'check_out_time',
         'amenities',
-        'social_links',
+        'policies',
         'status',
-        'non_working_days',
-        'settings',
+        'is_featured',
+        'sort_order',
+        'meta_title',
+        'meta_description',
+        'meta_keywords',
+    ];
+
+    protected $attributes = [
+        'address' => 'Не указан',
+        'city' => 'Не указан',
+        'country' => 'Россия',
+        'phone' => 'Не указан',
+        'stars' => 3,
+        'check_in_time' => '14:00:00',
+        'check_out_time' => '12:00:00',
+        'status' => 'active',
+        'is_featured' => false,
+        'sort_order' => 0,
     ];
 
     protected $casts = [
-        'photos' => 'array',
-        'videos' => 'array',
-        'contact_info' => 'array',
+        'is_featured' => 'boolean',
+        'stars' => 'integer',
         'amenities' => 'array',
-        'social_links' => 'array',
-        'non_working_days' => 'array',
-        'settings' => 'array',
+        'sort_order' => 'integer',
     ];
 
     public function rooms()
@@ -47,39 +58,20 @@ class Hotel extends Model
         return $this->hasMany(Room::class);
     }
 
-    public function activeRooms()
+    /**
+     * Отношение к изображениям отеля.
+     */
+    public function images()
     {
-        return $this->rooms()->where('status', 'available');
+        return $this->hasMany(HotelImage::class)->ordered();
     }
 
-    public function reviews()
+    /**
+     * Получить главное изображение.
+     */
+    public function getMainImageAttribute()
     {
-        return $this->hasManyThrough(Review::class, Room::class);
-    }
-
-    public function bookings()
-    {
-        return $this->hasManyThrough(Booking::class, Room::class);
-    }
-
-    public function isActive(): bool
-    {
-        return $this->status === 'active';
-    }
-
-    public function isOnNonWorkingDay(\Carbon\Carbon $date): bool
-    {
-        if (!$this->non_working_days) {
-            return false;
-        }
-
-        return in_array($date->toDateString(), $this->non_working_days);
-    }
-
-    public function getMainPhotoAttribute()
-    {
-        $photos = $this->photos;
-        return $photos ? $photos[0] : null;
+        return $this->images()->main()->first() ?? $this->images()->first();
     }
 
     public function facilities()
@@ -87,5 +79,43 @@ class Hotel extends Model
         return $this->belongsToMany(Facility::class, 'facility_hotel')
             ->withPivot('description', 'is_available')
             ->withTimestamps();
+    }
+
+    // Добавляем недостающие scopes:
+
+    // Scope для получения активных отелей
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    // Scope для получения выделенных отелей
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true);
+    }
+
+    // Scope для сортировки
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order')->orderBy('name');
+    }
+
+    // Scope для поиска по городу
+    public function scopeByCity($query, $city)
+    {
+        return $query->where('city', $city);
+    }
+
+    // Scope для поиска по стране
+    public function scopeByCountry($query, $country)
+    {
+        return $query->where('country', $country);
+    }
+
+    // Scope для получения отелей с определенным количеством звезд
+    public function scopeByStars($query, $stars)
+    {
+        return $query->where('stars', '>=', $stars);
     }
 }

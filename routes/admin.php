@@ -116,6 +116,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('review-reports', [\App\Http\Controllers\Admin\ReviewReportController::class, 'index'])->name('review-reports.index');
     Route::delete('review-reports/{reviewReport}', [\App\Http\Controllers\Admin\ReviewReportController::class, 'destroy'])->name('review-reports.destroy');
     Route::post('review-reports/{reviewReport}/resolve', [\App\Http\Controllers\Admin\ReviewReportController::class, 'resolve'])->name('review-reports.resolve');
+
+    // FAQ в админке
+    Route::resource('faqs', \App\Http\Controllers\Admin\FAQController::class);
+
+    // Предложения FAQ
+    Route::resource('faq-suggestions', \App\Http\Controllers\Admin\FAQSuggestionController::class);
 });
 
 Route::prefix('faq')->name('faq.')->group(function () {
