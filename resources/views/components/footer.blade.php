@@ -1,296 +1,197 @@
-<footer class="footer bg-dark text-white pt-5 pb-4">
+<footer class="bg-dark text-white py-5">
     <div class="container">
         <div class="row">
             <!-- О компании -->
-            <div class="col-lg-4 mb-4">
-                <h5 class="fw-bold mb-4">
-                    <i class="bi bi-house-heart text-primary"></i> {{ config('app.name', 'Отель у моря') }}
-                </h5>
-                <p class="text-muted mb-4">
-                    {{ $hotel->short_description ?? 'Роскошный отель для незабываемого отдыха у самого синего моря. Комфорт, уют и безупречный сервис.' }}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <h5 class="fw-bold mb-3">Отель у Моря</h5>
+                <p class="text-light">
+                    Комфортабельный отель на берегу моря с современными номерами,
+                    рестораном и СПА-центром. Идеальное место для отдыха и релаксации.
                 </p>
-                <div class="d-flex gap-3">
-                    <a href="{{ $hotel->facebook_url ?? '#' }}" class="text-white fs-5" target="_blank">
-                        <i class="bi bi-facebook"></i>
+                <div class="social-icons mt-3">
+                    <a href="https://vk.com/hotelbysea" class="text-white me-3" target="_blank" title="ВКонтакте">
+                        <i class="fab fa-vk fa-lg"></i>
                     </a>
-                    <a href="{{ $hotel->instagram_url ?? '#' }}" class="text-white fs-5" target="_blank">
-                        <i class="bi bi-instagram"></i>
+                    <a href="https://t.me/hotelbysea" class="text-white me-3" target="_blank" title="Telegram">
+                        <i class="fab fa-telegram fa-lg"></i>
                     </a>
-                    <a href="{{ $hotel->telegram_url ?? '#' }}" class="text-white fs-5" target="_blank">
-                        <i class="bi bi-telegram"></i>
+                    <a href="https://www.instagram.com/hotelbysea" class="text-white me-3" target="_blank" title="Instagram">
+                        <i class="fab fa-instagram fa-lg"></i>
                     </a>
-                    <a href="{{ $hotel->vk_url ?? '#' }}" class="text-white fs-5" target="_blank">
-                        <i class="bi bi-vimeo"></i>
+                    <a href="https://www.facebook.com/hotelbysea" class="text-white" target="_blank" title="Facebook">
+                        <i class="fab fa-facebook fa-lg"></i>
                     </a>
                 </div>
             </div>
 
             <!-- Быстрые ссылки -->
             <div class="col-lg-2 col-md-6 mb-4">
-                <h6 class="fw-bold mb-4">Отель</h6>
+                <h5 class="fw-bold mb-3">Быстрые ссылки</h5>
                 <ul class="list-unstyled">
                     <li class="mb-2">
-                        <a href="{{ route('pages.show', 'about') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Об отеле
+                        <a href="{{ route('home') }}" class="text-light text-decoration-none">
+                            <i class="fas fa-home me-1"></i> Главная
                         </a>
                     </li>
                     <li class="mb-2">
-                        <a href="{{ route('rooms.index') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Номера и цены
+                        <a href="{{ route('rooms.index') }}" class="text-light text-decoration-none">
+                            <i class="fas fa-bed me-1"></i> Номера
                         </a>
                     </li>
                     <li class="mb-2">
-                        <a href="{{ route('pages.show', 'services') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Услуги
+                        <a href="{{ route('hotel.about') }}" class="text-light text-decoration-none">
+                            <i class="fas fa-info-circle me-1"></i> Об отеле
                         </a>
                     </li>
                     <li class="mb-2">
-                        <a href="{{ route('pages.show', 'gallery') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Галерея
+                        <a href="{{ route('hotel.gallery') }}" class="text-light text-decoration-none">
+                            <i class="fas fa-images me-1"></i> Галерея
                         </a>
                     </li>
                     <li class="mb-2">
-                        <a href="{{ route('pages.show', 'contacts') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Контакты
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Для гостей -->
-            <div class="col-lg-2 col-md-6 mb-4">
-                <h6 class="fw-bold mb-4">Гостям</h6>
-                <ul class="list-unstyled">
-                    <li class="mb-2">
-                        <a href="{{ route('booking.step1') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Онлайн бронирование
-                        </a>
-                    </li>
-                    <li class="mb-2">
-                        <a href="{{ route('faqs.index') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Частые вопросы
-                        </a>
-                    </li>
-                    <li class="mb-2">
-                        <a href="{{ route('pages.show', 'reviews') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Отзывы
-                        </a>
-                    </li>
-                    <li class="mb-2">
-                        <a href="{{ route('pages.show', 'special-offers') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Спецпредложения
-                        </a>
-                    </li>
-                    <li class="mb-2">
-                        <a href="{{ route('pages.show', 'how-to-get') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Как добраться
+                        <a href="{{ route('faq.index') }}" class="text-light text-decoration-none">
+                            <i class="fas fa-question-circle me-1"></i> FAQ
                         </a>
                     </li>
                 </ul>
             </div>
 
             <!-- Контакты -->
-            <div class="col-lg-4 mb-4">
-                <h6 class="fw-bold mb-4">Контакты</h6>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <h5 class="fw-bold mb-3">Контакты</h5>
                 <ul class="list-unstyled">
-                    <li class="mb-3 d-flex align-items-start">
-                        <i class="bi bi-geo-alt text-primary me-3 mt-1"></i>
-                        <div>
-                            <strong>Адрес:</strong>
-                            <p class="mb-0 text-white-50">{{ $hotel->address ?? 'ул. Морская, 123, г. Сочи, Краснодарский край, Россия' }}</p>
-                        </div>
+                    <li class="mb-2">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        <span class="text-light">Краснодарский край, г. Сочи, ул. Приморская, 123</span>
                     </li>
-                    <li class="mb-3 d-flex align-items-start">
-                        <i class="bi bi-telephone text-primary me-3 mt-1"></i>
-                        <div>
-                            <strong>Телефон:</strong>
-                            <p class="mb-0">
-                                <a href="tel:{{ $hotel->phone ?? '+78005553535' }}" class="text-white-50 text-decoration-none hover-text-white">
-                                    {{ $hotel->phone ?? '+7 (800) 555-35-35' }}
+                    <li class="mb-2">
+                        <i class="fas fa-phone me-2"></i>
+                        <a href="tel:+78621234567" class="text-light text-decoration-none">
+                            +7 (862) 123-45-67
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-envelope me-2"></i>
+                        <a href="mailto:info@hotel-by-sea.ru" class="text-light text-decoration-none">
+                            info@hotel-by-sea.ru
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-clock me-2"></i>
+                        <span class="text-light">Круглосуточно</span>
+                    </li>
+                </ul>
+                <a href="{{ route('contact.index') }}" class="btn btn-outline-light btn-sm mt-2">
+                    <i class="fas fa-envelope me-1"></i> Написать нам
+                </a>
+            </div>
+
+            <!-- Полезные страницы -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <h5 class="fw-bold mb-3">Полезные страницы</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <a href="{{ route('pages.show', 'terms') }}" class="text-light text-decoration-none">
+                            <i class="fas fa-file-contract me-1"></i> Условия бронирования
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="{{ route('pages.show', 'privacy') }}" class="text-light text-decoration-none">
+                            <i class="fas fa-shield-alt me-1"></i> Политика конфиденциальности
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="{{ route('pages.show', 'cancellation') }}" class="text-light text-decoration-none">
+                            <i class="fas fa-ban me-1"></i> Политика отмены
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="{{ route('pages.show', 'payment') }}" class="text-light text-decoration-none">
+                            <i class="fas fa-credit-card me-1"></i> Способы оплаты
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="{{ route('sitemap') }}" class="text-light text-decoration-none">
+                            <i class="fas fa-sitemap me-1"></i> Карта сайта
+                        </a>
+                    </li>
+                    @auth
+                        @if(auth()->user()->isAdmin())
+                            <li class="mb-2">
+                                <a href="{{ route('admin.dashboard') }}" class="text-warning text-decoration-none">
+                                    <i class="fas fa-cog me-1"></i> Админ-панель
                                 </a>
-                            </p>
-                        </div>
-                    </li>
-                    <li class="mb-3 d-flex align-items-start">
-                        <i class="bi bi-envelope text-primary me-3 mt-1"></i>
-                        <div>
-                            <strong>Email:</strong>
-                            <p class="mb-0">
-                                <a href="mailto:{{ $hotel->email ?? 'info@hotel.ru' }}" class="text-white-50 text-decoration-none hover-text-white">
-                                    {{ $hotel->email ?? 'info@hotel.ru' }}
-                                </a>
-                            </p>
-                        </div>
-                    </li>
-                    <li class="mb-3 d-flex align-items-start">
-                        <i class="bi bi-clock text-primary me-3 mt-1"></i>
-                        <div>
-                            <strong>Ресепшн:</strong>
-                            <p class="mb-0 text-white-50">Круглосуточно</p>
-                        </div>
-                    </li>
+                            </li>
+                        @endif
+                    @endauth
                 </ul>
             </div>
         </div>
 
-        <hr class="bg-white-50 my-4">
+        <hr class="bg-light">
 
-        <!-- Нижняя часть футера -->
-        <div class="row align-items-center">
-            <div class="col-md-6 mb-3 mb-md-0">
-                <p class="mb-0 text-white-50">
-                    &copy; {{ date('Y') }} {{ config('app.name', 'Отель у моря') }}. Все права защищены.
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-0 text-light">
+                    &copy; {{ date('Y') }} Отель у Моря. Все права защищены.
                 </p>
             </div>
             <div class="col-md-6 text-md-end">
-                <ul class="list-inline mb-0">
-                    <li class="list-inline-item me-3">
-                        <a href="{{ route('pages.show', 'privacy-policy') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Политика конфиденциальности
-                        </a>
-                    </li>
-                    <li class="list-inline-item me-3">
-                        <a href="{{ route('pages.show', 'terms-of-use') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Условия использования
-                        </a>
-                    </li>
-                    <li class="list-inline-item">
-                        <a href="{{ route('sitemap.index') }}" class="text-white-50 text-decoration-none hover-text-white">
-                            Карта сайта
-                        </a>
-                    </li>
-                </ul>
+                <p class="mb-0 text-light">
+                    Разработано с <i class="fas fa-heart text-danger"></i> для вашего комфорта
+                </p>
             </div>
         </div>
 
-        <!-- Платежные системы -->
-        <div class="row mt-4">
-            <div class="col">
-                <h6 class="fw-bold mb-3 text-white-50">Мы принимаем:</h6>
-                <div class="d-flex flex-wrap gap-3">
-                    <div class="payment-icon">
-                        <i class="bi bi-credit-card-2-front fs-3 text-white-50"></i>
-                        <span class="visually-hidden">Visa</span>
-                    </div>
-                    <div class="payment-icon">
-                        <i class="bi bi-credit-card fs-3 text-white-50"></i>
-                        <span class="visually-hidden">Mastercard</span>
-                    </div>
-                    <div class="payment-icon">
-                        <i class="bi bi-credit-card-fill fs-3 text-white-50"></i>
-                        <span class="visually-hidden">МИР</span>
-                    </div>
-                    <div class="payment-icon">
-                        <i class="bi bi-cash fs-3 text-white-50"></i>
-                        <span class="visually-hidden">Наличные</span>
-                    </div>
-                    <div class="payment-icon">
-                        <i class="bi bi-phone fs-3 text-white-50"></i>
-                        <span class="visually-hidden">Мобильные платежи</span>
-                    </div>
+        <!-- Кнопка "Наверх" -->
+        <div class="position-fixed bottom-0 end-0 mb-4 me-4">
+            <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+                    class="btn btn-primary btn-lg rounded-circle shadow"
+                    title="Наверх">
+                <i class="fas fa-arrow-up"></i>
+            </button>
+        </div>
+    </div>
+</footer>
+
+<!-- Модальное окно для быстрого бронирования -->
+@auth
+    <div class="modal fade" id="quickBookingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Быстрое бронирование</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p>Перейти к выбору дат для бронирования номера</p>
+                    <a href="{{ route('booking.step1') }}" class="btn btn-primary">
+                        <i class="fas fa-calendar-plus me-1"></i> Начать бронирование
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+@endauth
 
-    <!-- Кнопка "Наверх" -->
-    <button class="btn btn-primary btn-back-to-top" id="backToTop">
-        <i class="bi bi-chevron-up"></i>
-    </button>
-</footer>
+<!-- Скрипты -->
+<script>
+    // Анимация скролла к верху
+    document.addEventListener('DOMContentLoaded', function() {
+        const scrollToTopBtn = document.querySelector('[title="Наверх"]');
 
-@push('styles')
-    <style>
-        .footer {
-            position: relative;
-            margin-top: auto;
-        }
-
-        .footer a.hover-text-white:hover {
-            color: #fff !important;
-            text-decoration: underline !important;
-        }
-
-        .payment-icon {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 60px;
-            height: 45px;
-            transition: all 0.3s;
-        }
-
-        .payment-icon:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .btn-back-to-top {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: none;
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-        }
-
-        .btn-back-to-top.show {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        @media (max-width: 768px) {
-            .footer {
-                text-align: center;
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 300) {
+                scrollToTopBtn.style.display = 'block';
+            } else {
+                scrollToTopBtn.style.display = 'none';
             }
-
-            .footer ul li {
-                justify-content: center !important;
-            }
-
-            .payment-icon {
-                width: 50px;
-                height: 40px;
-            }
-        }
-    </style>
-@endpush
-
-@push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Кнопка "Наверх"
-            const backToTopButton = document.getElementById('backToTop');
-
-            if (backToTopButton) {
-                window.addEventListener('scroll', function() {
-                    if (window.pageYOffset > 300) {
-                        backToTopButton.classList.add('show');
-                    } else {
-                        backToTopButton.classList.remove('show');
-                    }
-                });
-
-                backToTopButton.addEventListener('click', function() {
-                    window.scrollTo({
-                        top: 0,
-                        behavior: 'smooth'
-                    });
-                });
-            }
-
-            // Год в копирайте
-            const currentYear = new Date().getFullYear();
-            document.querySelectorAll('.current-year').forEach(element => {
-                element.textContent = currentYear;
-            });
         });
-    </script>
-@endpush
+
+        // Инициализация всплывающих подсказок
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
