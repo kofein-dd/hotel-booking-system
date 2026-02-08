@@ -13,7 +13,6 @@ return new class extends Migration
             $table->boolean('email_notifications')->default(true)->after('notification_preferences');
             $table->boolean('push_notifications')->default(true)->after('email_notifications');
             $table->boolean('sms_notifications')->default(false)->after('push_notifications');
-            $table->timestamp('email_verified_at')->nullable()->after('sms_notifications');
         });
     }
 
@@ -25,7 +24,6 @@ return new class extends Migration
                 'email_notifications',
                 'push_notifications',
                 'sms_notifications',
-                'email_verified_at'
             ]);
         });
     }

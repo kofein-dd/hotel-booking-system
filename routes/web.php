@@ -52,11 +52,14 @@ Route::get('/search', [SearchController::class, 'index'])->name('search');
 Route::post('/search/availability', [SearchController::class, 'checkAvailability'])->name('search.availability');
 
 // Аутентификация
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
-Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::middleware('guest')->group(function () {
+    Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('login', [AuthController::class, 'login']);
+    Route::get('register', [AuthController::class, 'showRegisterForm'])->name('register');
+    Route::post('register', [AuthController::class, 'register']);
+});
+
+Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
 // Подтверждение email
 Route::get('/email/verify', [AuthController::class, 'showVerificationNotice'])->name('verification.notice');

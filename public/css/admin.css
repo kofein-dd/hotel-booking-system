@@ -1,0 +1,35 @@
+/* Стили для админ-панели */
+.content-wrapper {
+    background-color: #f4f6f9;
+}
+
+/* Кастомные стили для таблиц */
+.table td, .table th {
+    vertical-align: middle;
+}
+
+/* Стили для статусов */
+.badge-pending { background-color: #ffc107; }
+.badge-confirmed { background-color: #28a745; }
+.badge-cancelled { background-color: #dc3545; }
+.badge-completed { background-color: #17a2b8; }
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 0.5rem;
+    }
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+}
